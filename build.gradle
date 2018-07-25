@@ -1,0 +1,18 @@
+plugins {
+    id 'java'
+}
+
+group 'com.bcnalgorithmclub'
+version '1.0-SNAPSHOT'
+
+sourceCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile group: 'com.google.guava', name: 'guava', version: '23.5-jre'
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+    testCompile 'org.assertj:assertj-core:2.9.0'
+}
