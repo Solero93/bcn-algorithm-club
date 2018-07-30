@@ -1,6 +1,8 @@
 package com.bcnalgorithmclub.graphs.maxflow;
 
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
 
 public class Parking {
 
@@ -8,27 +10,33 @@ public class Parking {
 
         Parking p = new Parking();
 
-        String[] case1 = new String[]{
+        String[] case0 = new String[]{
                 "C....XP",
                 "C....XP",
                 "C....XP"};
+        System.out.println(p.minTime(case0) == -1);
+
+        String[] case1 = new String[]{
+                "C.....P",
+                "C.....P",
+                "C.....P"};
         System.out.println(p.minTime(case1) == 6);
-//
-//        String[] case2 = new String[]{
-//                "C.X.....",
-//                "..X..X..",
-//                "..X..X..",
-//                ".....X.P"};
-//        System.out.println(p.minTime(case2) == 16);
-//
-//        String[] case3 = new String[]{
-//                "XXXXXXXXXXX",
-//                "X......XPPX",
-//                "XC...P.XPPX",
-//                "X......X..X",
-//                "X....C....X",
-//                "XXXXXXXXXXX"};
-//        System.out.println(p.minTime(case3) == 5);
+
+        String[] case2 = new String[]{
+                "C.X.....",
+                "..X..X..",
+                "..X..X..",
+                ".....X.P"};
+        System.out.println(p.minTime(case2) == 16);
+
+        String[] case3 = new String[]{
+                "XXXXXXXXXXX",
+                "X......XPPX",
+                "XC...P.XPPX",
+                "X......X..X",
+                "X....C....X",
+                "XXXXXXXXXXX"};
+        System.out.println(p.minTime(case3) == 5);
 
         String[] case4 = new String[]{
                 ".C.",
@@ -38,18 +46,18 @@ public class Parking {
                 "PPP"};
         System.out.println(p.minTime(case4) == 4);
 
-//        String[] case5 = new String[]{
-//                "CCCCC",
-//                ".....",
-//                "PXPXP"};
-//        System.out.println(p.minTime(case5) == -1);
-//
-//        String[] case6 = new String[]{
-//                "..X..",
-//                "C.X.P",
-//                "..X.."};
-//
-//        System.out.println(p.minTime(case6) == -1);
+        String[] case5 = new String[]{
+                "CCCCC",
+                ".....",
+                "PXPXP"};
+        System.out.println(p.minTime(case5) == -1);
+
+        String[] case6 = new String[]{
+                "..X..",
+                "C.X.P",
+                "..X.."};
+
+        System.out.println(p.minTime(case6) == -1);
     }
 
     private final char PARKING ='P';
@@ -93,18 +101,56 @@ public class Parking {
         if (numberOfCars > numberOfParking)
             return -1;
         int[][] distanceCarToParking = new int[numberOfCars][numberOfParking];
+        Set<Integer> availableDistances = new HashSet();
         for (int i = 0; i < numberOfCars; i++) {
-            distanceCarToParking[i] = calculateDistanceCarToParking(cars.get(i), array, parkings);
+            distanceCarToParking[i] = calculateDistanceCarToParking(cars.get(i), array, parkings, availableDistances);
         }
 
+        int minMaxFlow = Integer.MAX_VALUE;
+        for(int distance : availableDistances)
+        {
+            int[][] matrix = buildMatrix(numberOfCars, numberOfParking, distance, distanceCarToParking );
 
-        return 0;
+            MaximumFlow maximumFlow = new MaximumFlow();
+            int maxFlow = maximumFlow.fordFulkerson(matrix, 0, matrix[0].length - 1);
+            if (maxFlow == numberOfCars && distance < minMaxFlow) {
+                minMaxFlow = distance;
+            }
+
+        }
+
+        if( minMaxFlow == Integer.MAX_VALUE){
+            minMaxFlow = -1;
+        }
+        //System.out.println("Min Max distance: " + minMaxFlow);
+        return minMaxFlow;
     }
 
-    private int[] calculateDistanceCarToParking(Location car, char[][] parkingMap, ArrayList<Location> parkings)  {
+    private int[][] buildMatrix(int numberOfCars, int numberOfParking, int distance, int[][] distanceCarToParking) {
+        int size = 2 + numberOfCars + numberOfParking;
+        int[][] matrix = new int[size][size];
+
+        for (int i = 1; i <= numberOfCars; i++) {
+            matrix[0][i] = 1;
+
+            for (int j = 0; j < numberOfParking; j++) {
+                if(distanceCarToParking[i-1][j] <=distance) {
+                    matrix[i][j + numberOfCars + 1] = 1;
+                }
+            }
+        }
+
+        for (int i = 1; i <= numberOfParking; i++) {
+            matrix[numberOfCars + i][size-1] = 1;
+        }
+        return matrix;
+    }
+
+
+    private int[] calculateDistanceCarToParking(Location car, char[][] parkingMap, ArrayList<Location> parkings, Set<Integer> availableDistances)  {
         int[][] distances = new int[parkingMap.length][parkingMap[0].length];
         ArrayList<Location> vertices = new ArrayList<>();
-        ArrayList<Location> neighbours = new ArrayList<>();
+        ArrayList<Location> neighbours;
         int[] parkingDistances = new int[parkings.size()];
 
         for (int i = 0; i < parkingMap.length; i++) {
@@ -119,6 +165,10 @@ public class Parking {
         while(!vertices.isEmpty()) {
 
             Location minDistanceVertex = findMinDistanceVertex(distances, vertices);
+
+            if (minDistanceVertex == null){
+                break;
+            }
 
             vertices.remove(minDistanceVertex);
 
@@ -136,6 +186,9 @@ public class Parking {
         for(Location parking : parkings)
         {
             parkingDistances[i] = distances[parking.i][parking.j];
+            if (parkingDistances[i] != Integer.MAX_VALUE) {
+                availableDistances.add(parkingDistances[i]);
+            }
             i++;
         }
         return parkingDistances;
